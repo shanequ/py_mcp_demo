@@ -3,11 +3,39 @@ LLM App
 
 This is a LC agent that can use tools/resources and prompt from a MCP Server. 
 
+Errors:
+
+enum ErrorCode {
+  // Standard JSON-RPC error codes
+  ParseError = -32700,
+  InvalidRequest = -32600,
+  MethodNotFound = -32601,
+  InvalidParams = -32602,
+  InternalError = -32603
+}
+
+
+Read resource returns:
+
+{
+  contents: [
+    {
+      uri: string;        // The URI of the resource
+      mimeType?: string;  // Optional MIME type
+
+      // One of:
+      text?: string;      // For text resources
+      blob?: string;      // For binary resources (base64 encoded)
+    }
+  ]
+}
+
 """
 
 
 import asyncio
 import json
+import pprint
 
 from contextlib import asynccontextmanager
 from typing import Annotated, Any, List, AsyncGenerator, Tuple
@@ -52,7 +80,8 @@ def print_items(name: str, result: Any) -> None:
 
 
 async def stream_graph_updates(user_input: str, graph: Any):
-    async for event in graph.astream({'messages': [{'role': 'user', 'content': user_input}]}):
+    async for event in graph.astream(
+            {'messages': [{'role': 'user', 'content': user_input}]}):
         for value in event.values():
             print('Assistant: ', value['messages'][-1].content)
 
@@ -93,18 +122,18 @@ async def main():
         # print(resources, prompts, sep='\n', end='\n----\n')
         # print()
 
-        content, mime_type = await session.read_resource('list://resources')
-        print(json.loads(mime_type[1][0].text))
+        data = await session.read_resource('list://resources')
+        pprint.pprint(json.loads(data.contents[0].text)['resources'])
 
         print()
 
-        content, mime_type = await session.read_resource('greeting://Shane')
-        print(mime_type[1][0].text)
+        data = await session.read_resource('greeting://Shane')
+        pprint.pp(data.contents[0].text)
 
-        print('/n/n')
+        print('\n\n')
         print('Resource Templates:')
         resource_temp = await session.list_resource_templates()
-        print(resource_temp.resourceTemplates)
+        pprint.pp(resource_temp.resourceTemplates)
 
         while True:
             try:
