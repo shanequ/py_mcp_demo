@@ -125,7 +125,12 @@ def list_resources() -> dict:
     }
 
 
-@mcp.resource('greeting://{name}')
+@mcp.resource(
+        'greeting://{name}',  # URL
+        # name
+        # description
+        # mime_type
+    )
 def get_greeting(name: str) -> str:
     """A personalized greeting for the given name."""
     return f'Hello {name}! Welcome to MCP.'
@@ -171,9 +176,17 @@ def create_starlette_app(mcp_server: Server, *, debug: bool = False) -> Starlett
 STDIO_SERVER = False
 # execute and return the stdio output
 if __name__ == '__main__':
-    if STDIO_SERVER:
-        mcp.run(transport='stdio')
-    else:  # http server
-        mcp_server = mcp._mcp_server
-        starlette_app = create_starlette_app(mcp_server, debug=True)
-        uvicorn.run(starlette_app, host='0.0.0.0', port=8080)
+    # if STDIO_SERVER:
+    #     mcp.run(transport='stdio')
+    # else:  # http server
+    #     mcp_server = mcp._mcp_server
+    #     starlette_app = create_starlette_app(mcp_server, debug=True)
+    #     uvicorn.run(starlette_app, host='0.0.0.0', port=8080)
+
+    app = Starlette(
+        debug=False,
+        routes=[
+            Mount('/', app=mcp.sse_app()),
+        ],
+    )
+    uvicorn.run(app, host='0.0.0.0', port=8080)
